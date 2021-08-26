@@ -6,6 +6,8 @@ pragma experimental ABIEncoderV2;
 import './IKetherHomepage.sol';
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import '@openzeppelin/contracts/utils/Strings.sol';
@@ -15,6 +17,7 @@ contract ThousandEtherHomePage is ERC721, ReentrancyGuard, Ownable {
   
   using Strings for uint256;
   using SafeMath for uint256;
+  using SafeERC20 for IERC20;
 
   // Original Contract
   IKetherHomepage public originalContract;
@@ -24,6 +27,9 @@ contract ThousandEtherHomePage is ERC721, ReentrancyGuard, Ownable {
 
   // Meta data
   mapping (uint256 => uint256[]) public metaData;
+
+  // Fee
+  uint256 public fee = 10000000000000000;
 
   constructor(
     address _originalContractAddress
@@ -69,11 +75,12 @@ contract ThousandEtherHomePage is ERC721, ReentrancyGuard, Ownable {
   }  
 
   // Wraps a single ad (you can only sell ads not pixels)
-  function wrap(uint256 adId) external nonReentrant returns(bool) {
+  function wrap(uint256 adId) external payable nonReentrant returns(bool) {
     (address adOwner,uint x, uint y, uint width, uint height,,,,,) = _ad(adId);
     require(adOwner != address(0), 'Please call preWrap first!');
     require(preWrapOwners[adId] == msg.sender, 'Only the original owner can wrap an Ad!');
     require(adOwner == address(this), 'Please setAdOwner to the wrapper contract!');
+    require(msg.value >= fee, 'Please pay the wrapping fee!');
     _safeMint(preWrapOwners[adId], adId);
     preWrapOwners[adId] = address(0);
     metaData[adId] = [x, y, width, height];
@@ -182,5 +189,32 @@ contract ThousandEtherHomePage is ERC721, ReentrancyGuard, Ownable {
           '}'
         )
       );
+  }
+
+  // Allows to withdraw lost tokens or lost ETH
+  // This cant access underlying NFTS
+  function withdraw(
+    address tokenAddress,
+    uint amount
+  ) external onlyOwner nonReentrant returns(bool) {
+    require(tokenAddress != address(this), 'Cant withdraw token wrapper itself!');
+    if(tokenAddress == address(0)) {
+      payableOwner().transfer(amount);
+    } else {
+      IERC20(tokenAddress).safeTransfer(payableOwner(), amount);
+    }
+    return true;
+  }
+
+  // Allows to take fee for wraping
+  function setFee(
+    uint amount
+  ) external onlyOwner nonReentrant returns(bool) {
+    fee = amount;
+    return true;
+  }
+
+  function payableOwner() view private returns(address payable) {
+    return payable(owner());
   }
 }

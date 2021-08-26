@@ -88,7 +88,7 @@ describe('ThousandEtherHomePage', function() {
 
   it('allows the ad owner to wrap an ad that he owns', async()=>{
     await expect(()=> 
-      wrapperContract.connect(wallets[1]).wrap(0)
+      wrapperContract.connect(wallets[1]).wrap(0, { value: '10000000000000000' })
     ).to.changeTokenBalance(wrapperContract, wallets[1], 1);
     expect(await wrapperContract.ownerOf(0)).to.equal(wallets[1].address);
     expect((await originalContract.ads(0))[0]).to.eq(wrapperContract.address);
@@ -152,7 +152,7 @@ describe('ThousandEtherHomePage', function() {
     await wrapperContract.connect(wallets[5]).preWrap(0);
     await originalContract.connect(wallets[5]).setAdOwner(0, wrapperContract.address);
     await expect(()=> 
-      wrapperContract.connect(wallets[5]).wrap(0)
+      wrapperContract.connect(wallets[5]).wrap(0, { value: '10000000000000000' })
     ).to.changeTokenBalance(wrapperContract, wallets[5], 1);
     expect(await wrapperContract.ownerOf(0)).to.equal(wallets[5].address);
     expect((await originalContract.ads(0))[0]).to.eq(wrapperContract.address);
@@ -171,5 +171,24 @@ describe('ThousandEtherHomePage', function() {
       { trait_type: 'X', value: 50 },
       { trait_type: 'Y', value: 100 }
     ]));
+  })
+
+  it('allows to withdrawal ETH', async()=>{
+    await expect(()=>
+      wrapperContract.connect(wallets[0]).withdraw('0x0000000000000000000000000000000000000000', '20000000000000000')
+    ).to.changeEtherBalance(wallets[0], '20000000000000000');
+  })
+
+  it('allows to set fee to 0', async()=>{
+    await wrapperContract.connect(wallets[0]).setFee('0');
+    expect(await wrapperContract.fee()).to.eq('0');
+  })
+
+  it('does not allow to withdrawal the token wrapper itself', async()=>{
+    await expect(
+      wrapperContract.connect(wallets[0]).withdraw(wrapperContract.address, ethers.utils.parseUnits('1', 18))
+    ).to.be.revertedWith(
+      'Cant withdraw token wrapper itself!'
+    )
   })
 })
