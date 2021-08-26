@@ -95,6 +95,13 @@ describe('ThousandEtherHomePage', function() {
     expect(await wrapperContract.preWrapOwners(0)).to.eq('0x0000000000000000000000000000000000000000');
   })
 
+  it('that token stored meta data too', async()=>{
+    expect(await wrapperContract.metaData(0, 0)).to.eq(5);
+    expect(await wrapperContract.metaData(0, 1)).to.eq(10);
+    expect(await wrapperContract.metaData(0, 2)).to.eq(1);
+    expect(await wrapperContract.metaData(0, 3)).to.eq(1);
+  });
+
   it('does not allow admin to rescue a wrapped/minted token', async()=>{
     await expect(
       wrapperContract.connect(wallets[0]).rescueOwner(0, wallets[1].address)
@@ -150,5 +157,19 @@ describe('ThousandEtherHomePage', function() {
     expect(await wrapperContract.ownerOf(0)).to.equal(wallets[5].address);
     expect((await originalContract.ads(0))[0]).to.eq(wrapperContract.address);
     expect(await wrapperContract.preWrapOwners(0)).to.eq('0x0000000000000000000000000000000000000000');
+  })
+
+  it('provides token meta data', async()=>{
+    let tokenURI = await wrapperContract.tokenURI(0);
+    const json = Buffer.from(tokenURI.split(',')[1], "base64");
+    const data = JSON.parse(json.toString());
+    expect(data.name).to.eq('Advertisement 10x10 pixels at position 50,100');
+    expect(data.image).to.eq('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDEyMDAiPjxkZWZzPjxzdHlsZT4uY2xzLTF7ZmlsbDojZmZmO30uY2xzLTJ7ZmlsbDojZjlmOWY5O30uY2xzLTN7ZmlsbDojZjA2OGEyO308L3N0eWxlPjwvZGVmcz48cmVjdCBjbGFzcz0iY2xzLTEiIHdpZHRoPSIxMjAwIiBoZWlnaHQ9IjEyMDAiLz48cmVjdCBjbGFzcz0iY2xzLTIiIHg9IjEwMCIgeT0iMTAwIiB3aWR0aD0iMTAwMCIgaGVpZ2h0PSIxMDAwIi8+PHJlY3QgY2xhc3M9ImNscy0zIiB4PSIxNTAiIHk9IjIwMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIi8+PC9zdmc+');
+    expect(JSON.stringify(data.attributes)).to.eq(JSON.stringify([
+      { trait_type: 'WIDTH', value: 10 },
+      { trait_type: 'HEIGHT', value: 10 },
+      { trait_type: 'X', value: 50 },
+      { trait_type: 'Y', value: 100 }
+    ]));
   })
 })

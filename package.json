@@ -58,5 +58,7 @@
     "flatten": "waffle flatten"
   },
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "base64-sol": "^1.0.1"
+  }
 }
