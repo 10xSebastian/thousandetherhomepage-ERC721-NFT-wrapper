@@ -98,7 +98,7 @@ contract ThousandEtherHomePage is ERC721, ReentrancyGuard, Ownable {
   function unwrap(uint256 adId) external nonReentrant returns(bool) {
     require(ownerOf(adId) == msg.sender, 'Only the owner can unwrap an Ad!');
     originalContract.setAdOwner(adId, msg.sender);
-    _burn(0);
+    _burn(adId);
     return true;
   }
 
